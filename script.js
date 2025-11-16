@@ -538,19 +538,7 @@ function clearAllData() {
 
 // Setup Last Order History
 function setupLastOrderHistory() {
-    // Add button to header actions for better visibility
-    const headerActions = document.querySelector('.header-actions');
-    if (headerActions) {
-        const historyButton = document.createElement('button');
-        historyButton.type = 'button';
-        historyButton.className = 'btn btn-secondary';
-        historyButton.innerHTML = '<i class="fas fa-history"></i> Last Orders';
-        historyButton.onclick = showLastOrderHistory;
-        historyButton.style.marginRight = '1rem';
-
-        // Insert as first button
-        headerActions.insertBefore(historyButton, headerActions.firstChild);
-    }
+    // Last order history functionality is available via form button
 }
 
 // Show Last Order History
@@ -582,32 +570,40 @@ function showLastOrderHistory() {
 
     recentOrders.forEach((order, index) => {
         const imageHtml = order.productImage 
-            ? `<img src="${order.productImage}" alt="Product" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0;">` 
-            : `<div style="width: 70px; height: 70px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px solid #e2e8f0; color: #94a3b8; font-size: 0.75rem; text-align: center;">No<br>Image</div>`;
+            ? `<img src="${order.productImage}" alt="Product" class="order-history-img">` 
+            : `<div class="order-history-no-img">No<br>Image</div>`;
         
         contentHtml += `
-            <div style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 15px; margin-bottom: 12px; cursor: pointer; transition: all 0.3s; background: white;" 
-                 onclick="fillFormWithHistory(${order.id})" 
-                 onmouseover="this.style.borderColor='#6366f1'; this.style.background='#f8fafc'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(99,102,241,0.15)'" 
-                 onmouseout="this.style.borderColor='#e2e8f0'; this.style.background='white'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                <div style="display: flex; gap: 15px;">
+            <div class="order-history-card">
+                <!-- Row 1: Date at top right -->
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+                    <span class="order-history-date">
+                        <i class="fas fa-calendar-alt" style="margin-right: 3px;"></i>${formatDate(order.exFactory)}
+                    </span>
+                </div>
+                
+                <!-- Row 2: Image and PO Number -->
+                <div style="display: flex; align-items: center; gap: 12px;">
                     <div style="flex-shrink: 0;">
                         ${imageHtml}
                     </div>
                     <div style="flex: 1;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <strong style="color: #1e293b; font-size: 1.1rem;">PO: ${order.poNo}</strong>
-                            <span style="color: #64748b; font-size: 0.9rem; background: #f1f5f9; padding: 4px 10px; border-radius: 5px;">${formatDate(order.exFactory)}</span>
-                        </div>
-                        <div style="font-size: 0.95rem; color: #64748b; line-height: 1.8;">
-                            <div><strong>SKU:</strong> ${order.skuNo} | <strong>Buyer:</strong> ${order.buyerCode} | <strong>MAHIMA:</strong> ${order.mahimaCode}</div>
-                            <div><strong>Color:</strong> ${order.color} | <strong>Department:</strong> ${order.department} | <strong>Total:</strong> ${order.total} units</div>
-                        </div>
+                        <strong class="order-history-po">PO: ${order.poNo}</strong>
                     </div>
                 </div>
-                <div style="margin-top: 10px; padding: 8px 12px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border-radius: 6px; font-size: 0.85rem; text-align: center; font-weight: 600;">
-                    ✓ Click to use as template
+                
+                <!-- Row 3: All Details -->
+                <div class="order-history-details">
+                    <div style="font-size: 0.9rem; color: #475569; line-height: 1.9; display: grid; gap: 6px;">
+                        <div><strong style="color: #1e293b;">SKU:</strong> <span style="color: #6366f1; font-weight: 600;">${order.skuNo}</span> | <strong style="color: #1e293b;">Buyer:</strong> ${order.buyerCode} | <strong style="color: #1e293b;">MAHIMA:</strong> ${order.mahimaCode}</div>
+                        <div><strong style="color: #1e293b;">Color:</strong> ${order.color} | <strong style="color: #1e293b;">Department:</strong> ${order.department} | <strong style="color: #1e293b;">Total:</strong> <span style="color: #10b981; font-weight: 700;">${order.total} units</span></div>
+                    </div>
                 </div>
+                
+                <!-- Row 4: Button -->
+                <button onclick="fillFormWithHistory(${order.id})" class="order-history-btn">
+                    <i class="fas fa-check-circle"></i> Click to use as template
+                </button>
             </div>
         `;
     });
