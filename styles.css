@@ -759,3 +759,46 @@ body {
         border: none;
     }
 }
+
+/* Image Preview Styles */
+#imagePreview, #editImagePreview {
+    margin-top: 12px;
+    padding: 12px;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-color);
+    text-align: center;
+}
+
+#imagePreview img, #editImagePreview img {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    margin-bottom: 10px;
+}
+
+.remove-image-btn {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 8px 16px;
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.remove-image-btn:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.remove-image-btn i {
+    margin-right: 5px;
+}
