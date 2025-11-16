@@ -41,6 +41,7 @@ function handleFormSubmit(e) {
         color: document.getElementById('color').value,
         department: document.getElementById('department').value,
         exFactory: document.getElementById('exFactory').value,
+        remark: document.getElementById('remark').value,
         sizes: {
             size2: parseInt(document.getElementById('size2').value) || 0,
             size4: parseInt(document.getElementById('size4').value) || 0,
@@ -149,6 +150,7 @@ function loadData() {
             <td>${item.sizes.size28 || '-'}</td>
             <td>${item.sizes.size30 || '-'}</td>
             <td class="total-column"><strong>${item.total}</strong></td>
+            <td>${item.remark || '-'}</td>
             <td>
                 <button class="action-btn edit" onclick="openEditModal(${item.id})" title="Edit">
                     <i class="fas fa-edit"></i>
@@ -198,6 +200,7 @@ function openEditModal(id) {
     document.getElementById('editColor').value = item.color;
     document.getElementById('editDepartment').value = item.department;
     document.getElementById('editExFactory').value = item.exFactory;
+    document.getElementById('editRemark').value = item.remark || '';
     
     // Populate sizes
     document.getElementById('editSize2').value = item.sizes.size2 || '';
@@ -259,6 +262,7 @@ function saveEditedData() {
         color: document.getElementById('editColor').value,
         department: document.getElementById('editDepartment').value,
         exFactory: document.getElementById('editExFactory').value,
+        remark: document.getElementById('editRemark').value,
         sizes: {
             size2: parseInt(document.getElementById('editSize2').value) || 0,
             size4: parseInt(document.getElementById('editSize4').value) || 0,
@@ -364,7 +368,7 @@ function exportToPDF() {
     const headers = [
         ['#', 'PO NO', 'SKU NO', 'BUYER CODE', 'MAHIMA CODE', 'COLOR', 'Department', 'Ex-Factory', 
          '2', '4/UK4', '6/UK5', '8/UK6', '10/UK10', '12/UK12', '14/UK14', '16/UK16', '18/UK18', 
-         '20', '22', '24', '26', '28', '30', 'TOTAL']
+         '20', '22', '24', '26', '28', '30', 'TOTAL', 'Remark']
     ];
     
     const rows = businessData.map((item, index) => [
@@ -391,7 +395,8 @@ function exportToPDF() {
         item.sizes.size26 || '-',
         item.sizes.size28 || '-',
         item.sizes.size30 || '-',
-        item.total
+        item.total,
+        item.remark || '-'
     ]);
     
     // Add table
@@ -409,10 +414,18 @@ function exportToPDF() {
         },
         bodyStyles: {
             fontSize: 7,
-            halign: 'center'
+            halign: 'center',
+            cellPadding: 1
         },
         columnStyles: {
-            23: { fillColor: [220, 220, 255], fontStyle: 'bold' } // Total column
+            24: { fillColor: [220, 220, 255], fontStyle: 'bold' }, // Total column
+            25: { 
+                cellWidth: 30, 
+                fontSize: 6,
+                halign: 'left',
+                valign: 'middle',
+                overflow: 'linebreak'
+            } // Remark column - wrapped text, smaller font, left aligned
         },
         margin: { top: 35, left: 5, right: 5 },
         tableWidth: 'auto'
@@ -433,9 +446,29 @@ function exportToCSV() {
     }
     
     const headers = [
-        'PO NO', 'SKU NO', 'BUYER CODE', 'MAHIMA CODE', 'COLOR', 'Department', 'Ex-Factory',
-        '2', '4/UK4', '6/UK5', '8/UK6', '10/UK10', '12/UK12', '14/UK14', '16/UK16', '18/UK18',
-        '20', '22', '24', '26', '28', '30', 'TOTAL'
+        'PO NO',
+        'SKU NO',
+        'BUYER CODE',
+        'MAHIMA CODE',
+        'COLOR',
+        'DEPARTMENT',
+        'Ex-Factory',
+        '2',
+        '4/UK4',
+        '6/UK5',
+        '8/UK6',
+        '10/UK10',
+        '12/UK12',
+        '14/UK14',
+        '16/UK16',
+        '18/UK18',
+        '20',
+        '22',
+        '24',
+        '26',
+        '28',
+        '30',
+        'TOTAL'
     ];
     
     let csv = headers.join(',') + '\n';
@@ -464,13 +497,14 @@ function exportToCSV() {
             item.sizes.size26 || 0,
             item.sizes.size28 || 0,
             item.sizes.size30 || 0,
-            item.total
+            item.total,
+            item.remark || ''
         ];
         csv += row.join(',') + '\n';
     });
     
     // Download CSV
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -479,6 +513,124 @@ function exportToCSV() {
     window.URL.revokeObjectURL(url);
     
     showToast('CSV exported successfully! 📊');
+}
+
+// Export to Excel with Formatting
+function exportToExcel() {
+    if (businessData.length === 0) {
+        alert('No data to export!');
+        return;
+    }
+    
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Prepare header row with styling
+    const headers = [
+        'PO NO',
+        'SKU NO',
+        'BUYER CODE',
+        'MAHIMA CODE',
+        'COLOR',
+        'DEPARTMENT',
+        'Ex-Factory',
+        '2',
+        '4/UK4',
+        '6/UK5',
+        '8/UK6',
+        '10/UK10',
+        '12/UK12',
+        '14/UK14',
+        '16/UK16',
+        '18/UK18',
+        '20',
+        '22',
+        '24',
+        '26',
+        '28',
+        '30',
+        'TOTAL',
+        'REMARK'
+    ];
+    
+    // Prepare data rows
+    const data = businessData.map(item => [
+        item.poNo,
+        item.skuNo,
+        item.buyerCode,
+        item.mahimaCode,
+        item.color,
+        item.department,
+        formatDate(item.exFactory),
+        item.sizes.size2 || 0,
+        item.sizes.size4 || 0,
+        item.sizes.size6 || 0,
+        item.sizes.size8 || 0,
+        item.sizes.size10 || 0,
+        item.sizes.size12 || 0,
+        item.sizes.size14 || 0,
+        item.sizes.size16 || 0,
+        item.sizes.size18 || 0,
+        item.sizes.size20 || 0,
+        item.sizes.size22 || 0,
+        item.sizes.size24 || 0,
+        item.sizes.size26 || 0,
+        item.sizes.size28 || 0,
+        item.sizes.size30 || 0,
+        item.total,
+        item.remark || ''
+    ]);
+    
+    // Combine headers and data
+    const wsData = [headers, ...data];
+    
+    // Add summary rows
+    wsData.push([]);
+    wsData.push(['SUMMARY', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+    wsData.push(['Total Orders:', businessData.length, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+    wsData.push(['Total Units:', businessData.reduce((sum, item) => sum + item.total, 0), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+    
+    // Create worksheet
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Set column widths
+    const colWidths = [
+        { wch: 15 }, // PO NO
+        { wch: 15 }, // SKU NO
+        { wch: 15 }, // BUYER CODE
+        { wch: 15 }, // MAHIMA CODE
+        { wch: 15 }, // COLOR
+        { wch: 15 }, // DEPARTMENT
+        { wch: 15 }, // EX-FACTORY
+        { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
+        { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
+        { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
+        { wch: 15 }, // TOTAL
+        { wch: 20 }  // REMARK
+    ];
+    ws['!cols'] = colWidths;
+    
+    // Style the header row (first row) - Bold with background color
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+        if (!ws[cellAddress]) continue;
+        
+        ws[cellAddress].s = {
+            font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "4F46E5" } },
+            alignment: { horizontal: "center", vertical: "center" }
+        };
+    }
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Business Data');
+    
+    // Generate and download file
+    const fileName = `Business_Data_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    
+    showToast('Excel file exported successfully! 📗');
 }
 
 // Show Toast Notification

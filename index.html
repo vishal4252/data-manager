@@ -104,17 +104,38 @@
                             </div>
                             <div class="form-group">
                                 <label for="color">Color *</label>
-                                <input type="text" id="color" required placeholder="e.g., Navy Blue">
+                                <select id="color" required>
+                                    <option value="">Select Color</option>
+                                    <option value="WHITE">WHITE</option>
+                                    <option value="BLACK">BLACK</option>
+                                    <option value="CREAM">CREAM</option>
+                                    <option value="BLUE FLORAL">BLUE FLORAL</option>
+                                    <option value="MARIGOLD">MARIGOLD</option>
+                                    <option value="ZEBRA PRINT">ZEBRA PRINT</option>
+                                    <option value="FLORAL SPOT PRINT">FLORAL SPOT PRINT</option>
+                                    <option value="PLACEMENT PRINT">PLACEMENT PRINT</option>
+                                    <option value="TBC">TBC</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label for="department">Department *</label>
-                                <input type="text" id="department" required placeholder="e.g., Men's Wear">
+                                <select id="department" required>
+                                    <option value="">Select Department</option>
+                                    <option value="ARRANGE">ARRANGE</option>
+                                    <option value="Evening Dresses">Evening Dresses</option>
+                                    <option value="Day Dresses">Day Dresses</option>
+                                    <option value="Separates Wo">Separates Wo</option>
+                                </select>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="exFactory">Ex-Factory Date *</label>
                                 <input type="date" id="exFactory" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="remark">Remark</label>
+                                <input type="text" id="remark" placeholder="Optional remark">
                             </div>
                         </div>
                     </div>
@@ -210,6 +231,9 @@
                     <h2><i class="fas fa-table"></i> Data Preview</h2>
                     <div class="table-actions">
                         <input type="text" id="searchInput" placeholder="Search..." class="search-input">
+                        <button class="btn btn-secondary btn-sm" onclick="exportToExcel()">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </button>
                         <button class="btn btn-secondary btn-sm" onclick="exportToCSV()">
                             <i class="fas fa-file-csv"></i> CSV
                         </button>
@@ -244,12 +268,13 @@
                                 <th>28</th>
                                 <th>30</th>
                                 <th class="total-column">TOTAL</th>
+                                <th>Remark</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
                             <tr class="empty-state">
-                                <td colspan="25">
+                                <td colspan="26">
                                     <div class="empty-message">
                                         <i class="fas fa-inbox"></i>
                                         <p>No data yet. Add your first order above!</p>
@@ -303,17 +328,38 @@
                         </div>
                         <div class="form-group">
                             <label for="editColor">Color *</label>
-                            <input type="text" id="editColor" required placeholder="e.g., Navy Blue">
+                            <select id="editColor" required>
+                                <option value="">Select Color</option>
+                                <option value="WHITE">WHITE</option>
+                                <option value="BLACK">BLACK</option>
+                                <option value="CREAM">CREAM</option>
+                                <option value="BLUE FLORAL">BLUE FLORAL</option>
+                                <option value="MARIGOLD">MARIGOLD</option>
+                                <option value="ZEBRA PRINT">ZEBRA PRINT</option>
+                                <option value="FLORAL SPOT PRINT">FLORAL SPOT PRINT</option>
+                                <option value="PLACEMENT PRINT">PLACEMENT PRINT</option>
+                                <option value="TBC">TBC</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label for="editDepartment">Department *</label>
-                            <input type="text" id="editDepartment" required placeholder="e.g., Men's Wear">
+                            <select id="editDepartment" required>
+                                <option value="">Select Department</option>
+                                <option value="ARRANGE">ARRANGE</option>
+                                <option value="Evening Dresses">Evening Dresses</option>
+                                <option value="Day Dresses">Day Dresses</option>
+                                <option value="Separates Wo">Separates Wo</option>
+                            </select>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="editExFactory">Ex-Factory Date *</label>
                             <input type="date" id="editExFactory" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editRemark">Remark</label>
+                            <input type="text" id="editRemark" placeholder="Optional remark">
                         </div>
                     </div>
                 </div>
@@ -405,6 +451,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
