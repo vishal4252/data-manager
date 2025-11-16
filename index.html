@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Data Manager - Modern & Cool</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Business Data Manager</span>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="clearAllData()">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                    <button class="btn btn-primary" onclick="exportToPDF()">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p class="stat-label">Total Orders</p>
+                        <p class="stat-value" id="totalOrders">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p class="stat-label">Total Items</p>
+                        <p class="stat-value" id="totalItems">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p class="stat-label">Unique Colors</p>
+                        <p class="stat-value" id="uniqueColors">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">
+                        <i class="fas fa-tshirt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <p class="stat-label">Total Units</p>
+                        <p class="stat-value" id="totalUnits">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Entry Form -->
+            <div class="form-container">
+                <div class="form-header">
+                    <h2><i class="fas fa-plus-circle"></i> Add New Order</h2>
+                    <p>Fill in the details below to add a new order to your database</p>
+                </div>
+
+                <form id="dataForm" class="data-form">
+                    <!-- Basic Info -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="poNo">PO Number *</label>
+                                <input type="text" id="poNo" required placeholder="e.g., PO-2024-001">
+                            </div>
+                            <div class="form-group">
+                                <label for="skuNo">SKU Number *</label>
+                                <input type="text" id="skuNo" required placeholder="e.g., SKU-12345">
+                            </div>
+                            <div class="form-group">
+                                <label for="buyerCode">Buyer Code *</label>
+                                <input type="text" id="buyerCode" required placeholder="e.g., BC-001">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="mahimaCode">MAHIMA Code *</label>
+                                <input type="text" id="mahimaCode" required placeholder="e.g., MC-001">
+                            </div>
+                            <div class="form-group">
+                                <label for="color">Color *</label>
+                                <input type="text" id="color" required placeholder="e.g., Navy Blue">
+                            </div>
+                            <div class="form-group">
+                                <label for="department">Department *</label>
+                                <input type="text" id="department" required placeholder="e.g., Men's Wear">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="exFactory">Ex-Factory Date *</label>
+                                <input type="date" id="exFactory" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sizes Section -->
+                    <div class="form-section">
+                        <h3><i class="fas fa-ruler-combined"></i> Size Quantities</h3>
+                        <p class="section-subtitle">Enter quantity for each size (leave empty or 0 if not applicable)</p>
+                        
+                        <div class="sizes-grid">
+                            <div class="size-input">
+                                <label>Size 2</label>
+                                <input type="number" id="size2" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>4/UK4</label>
+                                <input type="number" id="size4" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>6/UK5</label>
+                                <input type="number" id="size6" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>8/UK6</label>
+                                <input type="number" id="size8" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>10/UK10</label>
+                                <input type="number" id="size10" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>12/UK12</label>
+                                <input type="number" id="size12" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>14/UK14</label>
+                                <input type="number" id="size14" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>16/UK16</label>
+                                <input type="number" id="size16" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>18/UK18</label>
+                                <input type="number" id="size18" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>Size 20</label>
+                                <input type="number" id="size20" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>Size 22</label>
+                                <input type="number" id="size22" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>Size 24</label>
+                                <input type="number" id="size24" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>Size 26</label>
+                                <input type="number" id="size26" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>Size 28</label>
+                                <input type="number" id="size28" min="0" placeholder="0">
+                            </div>
+                            <div class="size-input">
+                                <label>Size 30</label>
+                                <input type="number" id="size30" min="0" placeholder="0">
+                            </div>
+                        </div>
+
+                        <div class="total-display">
+                            <span>Total Units:</span>
+                            <span class="total-value" id="formTotal">0</span>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                            <i class="fas fa-undo"></i> Reset
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-large">
+                            <i class="fas fa-check-circle"></i> Add Order
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Data Preview Table -->
+            <div class="table-container">
+                <div class="table-header">
+                    <h2><i class="fas fa-table"></i> Data Preview</h2>
+                    <div class="table-actions">
+                        <input type="text" id="searchInput" placeholder="Search..." class="search-input">
+                        <button class="btn btn-secondary btn-sm" onclick="exportToCSV()">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="table-wrapper">
+                    <table id="dataTable" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>PO NO</th>
+                                <th>SKU NO</th>
+                                <th>BUYER CODE</th>
+                                <th>MAHIMA CODE</th>
+                                <th>COLOR</th>
+                                <th>Department</th>
+                                <th>Ex-Factory</th>
+                                <th>2</th>
+                                <th>4/UK4</th>
+                                <th>6/UK5</th>
+                                <th>8/UK6</th>
+                                <th>10/UK10</th>
+                                <th>12/UK12</th>
+                                <th>14/UK14</th>
+                                <th>16/UK16</th>
+                                <th>18/UK18</th>
+                                <th>20</th>
+                                <th>22</th>
+                                <th>24</th>
+                                <th>26</th>
+                                <th>28</th>
+                                <th>30</th>
+                                <th class="total-column">TOTAL</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr class="empty-state">
+                                <td colspan="25">
+                                    <div class="empty-message">
+                                        <i class="fas fa-inbox"></i>
+                                        <p>No data yet. Add your first order above!</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Success Toast -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Order added successfully!</span>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
