@@ -1,5 +1,7 @@
 // Data Storage
 let businessData = JSON.parse(localStorage.getItem('businessData')) || [];
+let editMode = false;
+let editingId = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -17,6 +19,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Search functionality
     document.getElementById('searchInput').addEventListener('input', handleSearch);
+    
+    // Close modal on outside click
+    document.getElementById('editModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeEditModal();
+        }
+    });
 });
 
 // Handle Form Submission
@@ -24,7 +33,7 @@ function handleFormSubmit(e) {
     e.preventDefault();
     
     const formData = {
-        id: Date.now(),
+        id: editMode ? editingId : Date.now(),
         poNo: document.getElementById('poNo').value,
         skuNo: document.getElementById('skuNo').value,
         buyerCode: document.getElementById('buyerCode').value,
@@ -54,8 +63,24 @@ function handleFormSubmit(e) {
     // Calculate total
     formData.total = Object.values(formData.sizes).reduce((sum, val) => sum + val, 0);
     
-    // Add to data array
-    businessData.push(formData);
+    if (editMode) {
+        // Update existing order
+        const index = businessData.findIndex(item => item.id === editingId);
+        if (index !== -1) {
+            businessData[index] = formData;
+        }
+        showToast('Order updated successfully! ✅');
+        editMode = false;
+        editingId = null;
+        
+        // Update button text
+        const submitBtn = document.querySelector('.btn-large');
+        submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Add Order';
+    } else {
+        // Add new order
+        businessData.push(formData);
+        showToast('Order added successfully! 🎉');
+    }
     
     // Save to localStorage
     localStorage.setItem('businessData', JSON.stringify(businessData));
@@ -63,9 +88,6 @@ function handleFormSubmit(e) {
     // Update UI
     loadData();
     updateStats();
-    
-    // Show success message
-    showToast('Order added successfully! 🎉');
     
     // Reset form
     resetForm();
@@ -128,6 +150,9 @@ function loadData() {
             <td>${item.sizes.size30 || '-'}</td>
             <td class="total-column"><strong>${item.total}</strong></td>
             <td>
+                <button class="action-btn edit" onclick="openEditModal(${item.id})" title="Edit">
+                    <i class="fas fa-edit"></i>
+                </button>
                 <button class="action-btn delete" onclick="deleteRow(${item.id})" title="Delete">
                     <i class="fas fa-trash"></i>
                 </button>
@@ -160,6 +185,119 @@ function deleteRow(id) {
     }
 }
 
+// Open Edit Modal
+function openEditModal(id) {
+    const item = businessData.find(data => data.id === id);
+    if (!item) return;
+    
+    // Populate modal with current data
+    document.getElementById('editPoNo').value = item.poNo;
+    document.getElementById('editSkuNo').value = item.skuNo;
+    document.getElementById('editBuyerCode').value = item.buyerCode;
+    document.getElementById('editMahimaCode').value = item.mahimaCode;
+    document.getElementById('editColor').value = item.color;
+    document.getElementById('editDepartment').value = item.department;
+    document.getElementById('editExFactory').value = item.exFactory;
+    
+    // Populate sizes
+    document.getElementById('editSize2').value = item.sizes.size2 || '';
+    document.getElementById('editSize4').value = item.sizes.size4 || '';
+    document.getElementById('editSize6').value = item.sizes.size6 || '';
+    document.getElementById('editSize8').value = item.sizes.size8 || '';
+    document.getElementById('editSize10').value = item.sizes.size10 || '';
+    document.getElementById('editSize12').value = item.sizes.size12 || '';
+    document.getElementById('editSize14').value = item.sizes.size14 || '';
+    document.getElementById('editSize16').value = item.sizes.size16 || '';
+    document.getElementById('editSize18').value = item.sizes.size18 || '';
+    document.getElementById('editSize20').value = item.sizes.size20 || '';
+    document.getElementById('editSize22').value = item.sizes.size22 || '';
+    document.getElementById('editSize24').value = item.sizes.size24 || '';
+    document.getElementById('editSize26').value = item.sizes.size26 || '';
+    document.getElementById('editSize28').value = item.sizes.size28 || '';
+    document.getElementById('editSize30').value = item.sizes.size30 || '';
+    
+    // Calculate and show total
+    calculateEditFormTotal();
+    
+    // Store the ID being edited
+    document.getElementById('editModal').dataset.editId = id;
+    
+    // Show modal
+    document.getElementById('editModal').style.display = 'flex';
+}
+
+// Close Edit Modal
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+// Calculate Edit Form Total
+function calculateEditFormTotal() {
+    const sizeInputs = document.querySelectorAll('.edit-size-input input');
+    let total = 0;
+    
+    sizeInputs.forEach(input => {
+        total += parseInt(input.value) || 0;
+    });
+    
+    document.getElementById('editFormTotal').textContent = total;
+}
+
+// Save Edited Data
+function saveEditedData() {
+    const id = parseInt(document.getElementById('editModal').dataset.editId);
+    const index = businessData.findIndex(item => item.id === id);
+    
+    if (index === -1) return;
+    
+    const updatedData = {
+        id: id,
+        poNo: document.getElementById('editPoNo').value,
+        skuNo: document.getElementById('editSkuNo').value,
+        buyerCode: document.getElementById('editBuyerCode').value,
+        mahimaCode: document.getElementById('editMahimaCode').value,
+        color: document.getElementById('editColor').value,
+        department: document.getElementById('editDepartment').value,
+        exFactory: document.getElementById('editExFactory').value,
+        sizes: {
+            size2: parseInt(document.getElementById('editSize2').value) || 0,
+            size4: parseInt(document.getElementById('editSize4').value) || 0,
+            size6: parseInt(document.getElementById('editSize6').value) || 0,
+            size8: parseInt(document.getElementById('editSize8').value) || 0,
+            size10: parseInt(document.getElementById('editSize10').value) || 0,
+            size12: parseInt(document.getElementById('editSize12').value) || 0,
+            size14: parseInt(document.getElementById('editSize14').value) || 0,
+            size16: parseInt(document.getElementById('editSize16').value) || 0,
+            size18: parseInt(document.getElementById('editSize18').value) || 0,
+            size20: parseInt(document.getElementById('editSize20').value) || 0,
+            size22: parseInt(document.getElementById('editSize22').value) || 0,
+            size24: parseInt(document.getElementById('editSize24').value) || 0,
+            size26: parseInt(document.getElementById('editSize26').value) || 0,
+            size28: parseInt(document.getElementById('editSize28').value) || 0,
+            size30: parseInt(document.getElementById('editSize30').value) || 0,
+        }
+    };
+    
+    // Calculate total
+    updatedData.total = Object.values(updatedData.sizes).reduce((sum, val) => sum + val, 0);
+    
+    // Update the data
+    businessData[index] = updatedData;
+    
+    // Save to localStorage
+    localStorage.setItem('businessData', JSON.stringify(businessData));
+    
+    // Update UI
+    loadData();
+    updateStats();
+    
+    // Close modal
+    closeEditModal();
+    
+    // Show success message
+    showToast('Order updated successfully! ✅');
+}
+
 // Clear All Data
 function clearAllData() {
     if (confirm('Are you sure you want to clear ALL data? This cannot be undone!')) {
@@ -175,6 +313,14 @@ function clearAllData() {
 function resetForm() {
     document.getElementById('dataForm').reset();
     document.getElementById('formTotal').textContent = '0';
+    editMode = false;
+    editingId = null;
+    
+    // Update button text
+    const submitBtn = document.querySelector('.btn-large');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Add Order';
+    }
 }
 
 // Search Functionality

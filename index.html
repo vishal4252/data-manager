@@ -269,6 +269,140 @@
         <span id="toastMessage">Order added successfully!</span>
     </div>
 
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Edit Order</h2>
+                <button class="modal-close" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-section">
+                    <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editPoNo">PO Number *</label>
+                            <input type="text" id="editPoNo" required placeholder="e.g., PO-2024-001">
+                        </div>
+                        <div class="form-group">
+                            <label for="editSkuNo">SKU Number *</label>
+                            <input type="text" id="editSkuNo" required placeholder="e.g., SKU-12345">
+                        </div>
+                        <div class="form-group">
+                            <label for="editBuyerCode">Buyer Code *</label>
+                            <input type="text" id="editBuyerCode" required placeholder="e.g., BC-001">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editMahimaCode">MAHIMA Code *</label>
+                            <input type="text" id="editMahimaCode" required placeholder="e.g., MC-001">
+                        </div>
+                        <div class="form-group">
+                            <label for="editColor">Color *</label>
+                            <input type="text" id="editColor" required placeholder="e.g., Navy Blue">
+                        </div>
+                        <div class="form-group">
+                            <label for="editDepartment">Department *</label>
+                            <input type="text" id="editDepartment" required placeholder="e.g., Men's Wear">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editExFactory">Ex-Factory Date *</label>
+                            <input type="date" id="editExFactory" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3><i class="fas fa-ruler-combined"></i> Size Quantities</h3>
+                    <p class="section-subtitle">Adjust quantities for each size</p>
+                    
+                    <div class="sizes-grid">
+                        <div class="edit-size-input">
+                            <label>Size 2</label>
+                            <input type="number" id="editSize2" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>4/UK4</label>
+                            <input type="number" id="editSize4" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>6/UK5</label>
+                            <input type="number" id="editSize6" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>8/UK6</label>
+                            <input type="number" id="editSize8" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>10/UK10</label>
+                            <input type="number" id="editSize10" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>12/UK12</label>
+                            <input type="number" id="editSize12" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>14/UK14</label>
+                            <input type="number" id="editSize14" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>16/UK16</label>
+                            <input type="number" id="editSize16" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>18/UK18</label>
+                            <input type="number" id="editSize18" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>Size 20</label>
+                            <input type="number" id="editSize20" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>Size 22</label>
+                            <input type="number" id="editSize22" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>Size 24</label>
+                            <input type="number" id="editSize24" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>Size 26</label>
+                            <input type="number" id="editSize26" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>Size 28</label>
+                            <input type="number" id="editSize28" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                        <div class="edit-size-input">
+                            <label>Size 30</label>
+                            <input type="number" id="editSize30" min="0" placeholder="0" oninput="calculateEditFormTotal()">
+                        </div>
+                    </div>
+
+                    <div class="total-display">
+                        <span>Total Units:</span>
+                        <span class="total-value" id="editFormTotal">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn btn-primary" onclick="saveEditedData()">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="script.js"></script>
