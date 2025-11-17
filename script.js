@@ -3,6 +3,38 @@ let businessData = JSON.parse(localStorage.getItem('businessData')) || [];
 let editMode = false;
 let editingId = null;
 
+// Handle Custom Color Selection
+function handleColorChange() {
+    const colorSelect = document.getElementById('color');
+    const customColorInput = document.getElementById('customColor');
+    
+    if (colorSelect.value === 'CUSTOM') {
+        customColorInput.style.display = 'block';
+        customColorInput.required = true;
+        customColorInput.focus();
+    } else {
+        customColorInput.style.display = 'none';
+        customColorInput.required = false;
+        customColorInput.value = '';
+    }
+}
+
+// Handle Custom Color Selection in Edit Modal
+function handleEditColorChange() {
+    const colorSelect = document.getElementById('editColor');
+    const customColorInput = document.getElementById('editCustomColor');
+    
+    if (colorSelect.value === 'CUSTOM') {
+        customColorInput.style.display = 'block';
+        customColorInput.required = true;
+        customColorInput.focus();
+    } else {
+        customColorInput.style.display = 'none';
+        customColorInput.required = false;
+        customColorInput.value = '';
+    }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function () {
     loadData();
@@ -58,16 +90,21 @@ function handleFormSubmit(e) {
 }
 
 function saveFormData(productImage) {
+    // Get color value - use custom color if selected
+    const colorSelect = document.getElementById('color');
+    const customColorInput = document.getElementById('customColor');
+    const colorValue = colorSelect.value === 'CUSTOM' ? customColorInput.value : colorSelect.value;
+    
     const formData = {
         id: editMode ? editingId : Date.now(),
-        poNo: document.getElementById('poNo').value,
+        poNo: document.getElementById('poNo').value.toUpperCase(),
         skuNo: document.getElementById('skuNo').value,
-        buyerCode: document.getElementById('buyerCode').value,
-        mahimaCode: document.getElementById('mahimaCode').value,
-        color: document.getElementById('color').value,
+        buyerCode: document.getElementById('buyerCode').value.toUpperCase(),
+        mahimaCode: document.getElementById('mahimaCode').value.toUpperCase(),
+        color: colorValue.toUpperCase(),
         department: document.getElementById('department').value,
         exFactory: document.getElementById('exFactory').value,
-        remark: document.getElementById('remark').value,
+        remark: document.getElementById('remark').value.toUpperCase(),
         productImage: productImage,
         sizes: {
             size2: parseInt(document.getElementById('size2').value) || 0,
@@ -384,7 +421,25 @@ function openEditModal(id) {
     document.getElementById('editSkuNo').value = item.skuNo;
     document.getElementById('editBuyerCode').value = item.buyerCode;
     document.getElementById('editMahimaCode').value = item.mahimaCode;
-    document.getElementById('editColor').value = item.color;
+    
+    // Handle color - check if it's a predefined color or custom
+    const colorSelect = document.getElementById('editColor');
+    const customColorInput = document.getElementById('editCustomColor');
+    const predefinedColors = ['WHITE', 'BLACK', 'CREAM', 'BLUE FLORAL', 'MARIGOLD', 'ZEBRA PRINT', 'FLORAL SPOT PRINT', 'PLACEMENT PRINT', 'TBC'];
+    
+    if (predefinedColors.includes(item.color)) {
+        colorSelect.value = item.color;
+        customColorInput.style.display = 'none';
+        customColorInput.required = false;
+        customColorInput.value = '';
+    } else {
+        // Custom color
+        colorSelect.value = 'CUSTOM';
+        customColorInput.style.display = 'block';
+        customColorInput.required = true;
+        customColorInput.value = item.color;
+    }
+    
     document.getElementById('editDepartment').value = item.department;
     document.getElementById('editExFactory').value = item.exFactory;
     document.getElementById('editRemark').value = item.remark || '';
@@ -475,16 +530,21 @@ function saveEditedData() {
 }
 
 function saveEditedDataWithImage(id, index, productImage) {
+    // Get color value - use custom color if selected
+    const colorSelect = document.getElementById('editColor');
+    const customColorInput = document.getElementById('editCustomColor');
+    const colorValue = colorSelect.value === 'CUSTOM' ? customColorInput.value : colorSelect.value;
+    
     const updatedData = {
         id: id,
-        poNo: document.getElementById('editPoNo').value,
+        poNo: document.getElementById('editPoNo').value.toUpperCase(),
         skuNo: document.getElementById('editSkuNo').value,
-        buyerCode: document.getElementById('editBuyerCode').value,
-        mahimaCode: document.getElementById('editMahimaCode').value,
-        color: document.getElementById('editColor').value,
+        buyerCode: document.getElementById('editBuyerCode').value.toUpperCase(),
+        mahimaCode: document.getElementById('editMahimaCode').value.toUpperCase(),
+        color: colorValue.toUpperCase(),
         department: document.getElementById('editDepartment').value,
         exFactory: document.getElementById('editExFactory').value,
-        remark: document.getElementById('editRemark').value,
+        remark: document.getElementById('editRemark').value.toUpperCase(),
         productImage: productImage,
         sizes: {
             size2: parseInt(document.getElementById('editSize2').value) || 0,
@@ -696,8 +756,19 @@ function resetForm() {
     editMode = false;
     editingId = null;
 
+    // Reset PO number to default
+    document.getElementById('poNo').value = '5000';
+
     // Clear image preview
     removeImage();
+
+    // Hide custom color input
+    const customColorInput = document.getElementById('customColor');
+    if (customColorInput) {
+        customColorInput.style.display = 'none';
+        customColorInput.required = false;
+        customColorInput.value = '';
+    }
 
     // Update button text
     const submitBtn = document.querySelector('.btn-large');
@@ -726,22 +797,29 @@ function exportToPDF() {
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('landscape', 'mm', 'a4');
+    
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 10; // Professional margin
 
     // Add title
-    doc.setFontSize(18);
+    doc.setFontSize(20);
     doc.setTextColor(99, 102, 241);
-    doc.text('Report', 14, 15);
+    doc.setFont(undefined, 'bold');
+    doc.text('Order Report', margin, 15);
 
     // Add date
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Generated: ${new Date().toLocaleString()}`, margin, 22);
 
-    // Add statistics
-    doc.setFontSize(11);
+    // Add statistics in a professional layout
+    doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    doc.text(`Total Orders: ${businessData.length}`, 14, 30);
-    doc.text(`Total Units: ${businessData.reduce((sum, item) => sum + item.total, 0)}`, 80, 30);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Total Orders: ${businessData.length}`, margin, 30);
+    doc.text(`Total Units: ${businessData.reduce((sum, item) => sum + item.total, 0)}`, margin + 60, 30);
 
     // Prepare table data
     const headers = [
@@ -778,54 +856,101 @@ function exportToPDF() {
         item.remark || '-'
     ]);
 
-    // Add table
+    // Add table with full width and professional styling
     doc.autoTable({
         head: headers,
         body: rows,
-        startY: 35,
-        theme: 'grid',
+        startY: 37,
+        theme: 'striped',
+        styles: {
+            lineColor: [200, 200, 200],
+            lineWidth: 0.1
+        },
         headStyles: {
             fillColor: [99, 102, 241],
             textColor: 255,
             fontStyle: 'bold',
-            fontSize: 8,
-            halign: 'center'
+            fontSize: 6.5,
+            halign: 'center',
+            cellPadding: 2,
+            valign: 'middle'
         },
         bodyStyles: {
-            fontSize: 7,
+            fontSize: 6.5,
             halign: 'center',
-            cellPadding: 1
+            cellPadding: 1.5,
+            valign: 'middle'
+        },
+        alternateRowStyles: {
+            fillColor: [248, 250, 252]
         },
         columnStyles: {
-            24: { fillColor: [220, 220, 255], fontStyle: 'bold' }, // Total column
-            25: {
-                cellWidth: 30,
+            0: { cellWidth: 7 }, // # column
+            1: { cellWidth: 'auto' }, // PO NO
+            2: { cellWidth: 'auto' }, // SKU NO
+            3: { cellWidth: 'auto' }, // BUYER CODE
+            4: { cellWidth: 'auto' }, // MAHIMA CODE
+            5: { cellWidth: 'auto' }, // COLOR
+            6: { cellWidth: 'auto' }, // Department
+            7: { cellWidth: 'auto' }, // Ex-Factory
+            8: { cellWidth: 7 }, // 2
+            9: { cellWidth: 8 }, // 4/UK4
+            10: { cellWidth: 8 }, // 6/UK5
+            11: { cellWidth: 8 }, // 8/UK6
+            12: { cellWidth: 9 }, // 10/UK10
+            13: { cellWidth: 9 }, // 12/UK12
+            14: { cellWidth: 9 }, // 14/UK14
+            15: { cellWidth: 9 }, // 16/UK16
+            16: { cellWidth: 9 }, // 18/UK18
+            17: { cellWidth: 7 }, // 20
+            18: { cellWidth: 7 }, // 22
+            19: { cellWidth: 7 }, // 24
+            20: { cellWidth: 7 }, // 26
+            21: { cellWidth: 7 }, // 28
+            22: { cellWidth: 7 }, // 30
+            23: { 
+                cellWidth: 10, 
+                fillColor: [220, 220, 255], 
+                fontStyle: 'bold',
+                textColor: [99, 102, 241]
+            }, // TOTAL
+            24: {
+                cellWidth: 'auto',
                 fontSize: 6,
                 halign: 'left',
                 valign: 'middle',
                 overflow: 'linebreak'
-            } // Remark column - wrapped text, smaller font, left aligned
+            } // Remark column
         },
-        margin: { top: 35, left: 5, right: 5 },
-        tableWidth: 'auto'
+        margin: { top: 37, left: margin, right: margin, bottom: margin },
+        tableWidth: 'auto',
+        didDrawPage: function(data) {
+            // Add page number at bottom
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text(
+                `Page ${doc.internal.getCurrentPageInfo().pageNumber}`,
+                pageWidth / 2,
+                pageHeight - 5,
+                { align: 'center' }
+            );
+        }
     });
 
     // Add product images in grid layout on new pages - SHOW ALL ORDERS
     if (businessData.length > 0) {
         doc.addPage();
-        doc.setFontSize(16);
+        doc.setFontSize(18);
+        doc.setFont(undefined, 'bold');
         doc.setTextColor(99, 102, 241);
-        doc.text('Product Images', 14, 15);
+        doc.text('Product Images', margin, 15);
 
-        const pageWidth = doc.internal.pageSize.width;
-        const pageHeight = doc.internal.pageSize.height;
-        const margin = 6;
         const imagesPerRow = 4;
         const imagesPerPage = 20; // 4 columns x 5 rows
-        const imageWidth = (pageWidth - margin * 5) / imagesPerRow;
-        const imageSize = 30; // Reduced image size to fit better
+        const imageWidth = (pageWidth - (margin * 2) - (margin * (imagesPerRow - 1))) / imagesPerRow;
+        const imageSize = 30;
         const labelHeight = 10;
-        const cellHeight = imageSize + labelHeight + 6; // Increased padding for image
+        const cellHeight = imageSize + labelHeight + 6;
         const rowsPerPage = 5;
 
         businessData.forEach((item, index) => {
@@ -837,14 +962,15 @@ function exportToPDF() {
             // Add new page if needed
             if (positionInPage === 0 && index > 0) {
                 doc.addPage();
-                doc.setFontSize(16);
+                doc.setFontSize(18);
+                doc.setFont(undefined, 'bold');
                 doc.setTextColor(99, 102, 241);
-                doc.text('Product Images (continued)', 14, 15);
+                doc.text('Product Images (continued)', margin, 15);
             }
 
-            // Calculate position
+            // Calculate position with proper margins
             const xPosition = margin + (col * (imageWidth + margin));
-            const yPosition = 22 + (row * cellHeight);
+            const yPosition = 25 + (row * cellHeight);
 
             // Add border box
             doc.setDrawColor(200, 200, 200);

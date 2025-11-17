@@ -93,7 +93,9 @@
                     type="text"
                     id="poNo"
                     required
-                    placeholder="e.g., PO-2024-001"
+                    placeholder="e.g., 5000XX"
+                    value="5000"
+                    oninput="this.value = this.value.toUpperCase()"
                   />
                 </div>
                 <div class="form-group">
@@ -102,7 +104,11 @@
                     type="text"
                     id="skuNo"
                     required
-                    placeholder="e.g., SKU-12345"
+                    placeholder="e.g., 123456789"
+                    maxlength="9"
+                    pattern="[0-9]{9}"
+                    title="SKU must be exactly 9 digits"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9)"
                   />
                 </div>
                 <div class="form-group">
@@ -112,6 +118,7 @@
                     id="buyerCode"
                     required
                     placeholder="e.g., BC-001"
+                    oninput="this.value = this.value.toUpperCase()"
                   />
                 </div>
               </div>
@@ -123,11 +130,12 @@
                     id="mahimaCode"
                     required
                     placeholder="e.g., MC-001"
+                    oninput="this.value = this.value.toUpperCase()"
                   />
                 </div>
                 <div class="form-group">
                   <label for="color">Color *</label>
-                  <select id="color" required>
+                  <select id="color" required onchange="handleColorChange()">
                     <option value="">Select Color</option>
                     <option value="WHITE">WHITE</option>
                     <option value="BLACK">BLACK</option>
@@ -138,7 +146,15 @@
                     <option value="FLORAL SPOT PRINT">FLORAL SPOT PRINT</option>
                     <option value="PLACEMENT PRINT">PLACEMENT PRINT</option>
                     <option value="TBC">TBC</option>
+                    <option value="CUSTOM">➕ Add Custom Color</option>
                   </select>
+                  <input
+                    type="text"
+                    id="customColor"
+                    placeholder="Enter custom color"
+                    style="display: none; margin-top: 8px;"
+                    oninput="this.value = this.value.toUpperCase()"
+                  />
                 </div>
                 <div class="form-group">
                   <label for="department">Department *</label>
@@ -162,6 +178,7 @@
                     type="text"
                     id="remark"
                     placeholder="Optional remark"
+                    oninput="this.value = this.value.toUpperCase()"
                   />
                 </div>
               </div>
@@ -423,7 +440,8 @@
                   type="text"
                   id="editPoNo"
                   required
-                  placeholder="e.g., PO-2024-001"
+                  placeholder="e.g., 5000XX"
+                  oninput="this.value = this.value.toUpperCase()"
                 />
               </div>
               <div class="form-group">
@@ -432,7 +450,11 @@
                   type="text"
                   id="editSkuNo"
                   required
-                  placeholder="e.g., SKU-12345"
+                  placeholder="e.g., 123456789"
+                  maxlength="9"
+                  pattern="[0-9]{9}"
+                  title="SKU must be exactly 9 digits"
+                  oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9)"
                 />
               </div>
               <div class="form-group">
@@ -442,6 +464,7 @@
                   id="editBuyerCode"
                   required
                   placeholder="e.g., BC-001"
+                  oninput="this.value = this.value.toUpperCase()"
                 />
               </div>
             </div>
@@ -453,11 +476,12 @@
                   id="editMahimaCode"
                   required
                   placeholder="e.g., MC-001"
+                  oninput="this.value = this.value.toUpperCase()"
                 />
               </div>
               <div class="form-group">
                 <label for="editColor">Color *</label>
-                <select id="editColor" required>
+                <select id="editColor" required onchange="handleEditColorChange()">
                   <option value="">Select Color</option>
                   <option value="WHITE">WHITE</option>
                   <option value="BLACK">BLACK</option>
@@ -468,7 +492,15 @@
                   <option value="FLORAL SPOT PRINT">FLORAL SPOT PRINT</option>
                   <option value="PLACEMENT PRINT">PLACEMENT PRINT</option>
                   <option value="TBC">TBC</option>
+                  <option value="CUSTOM">➕ Add Custom Color</option>
                 </select>
+                <input
+                  type="text"
+                  id="editCustomColor"
+                  placeholder="Enter custom color"
+                  style="display: none; margin-top: 8px;"
+                  oninput="this.value = this.value.toUpperCase()"
+                />
               </div>
               <div class="form-group">
                 <label for="editDepartment">Department *</label>
@@ -492,6 +524,7 @@
                   type="text"
                   id="editRemark"
                   placeholder="Optional remark"
+                  oninput="this.value = this.value.toUpperCase()"
                 />
               </div>
             </div>
