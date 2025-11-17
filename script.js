@@ -1088,6 +1088,108 @@ function exportToExcel() {
     showToast('Excel file exported successfully! 📗');
 }
 
+// Import from Excel
+function importFromExcel(event) {
+    const file = event.target.files[0];
+    
+    if (!file) {
+        return;
+    }
+
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            // Get first sheet
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            
+            // Convert to JSON
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+            
+            if (jsonData.length < 2) {
+                alert('Excel file is empty or invalid!');
+                return;
+            }
+            
+            // Clear existing data
+            businessData = [];
+            
+            // Skip header row (index 0) and process data rows
+            let importedCount = 0;
+            for (let i = 1; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                
+                // Skip empty rows or summary rows
+                if (!row || !row[0] || row[0] === 'SUMMARY' || row[0] === 'Total Orders:' || row[0] === 'Total Units:') {
+                    continue;
+                }
+                
+                // Create order object
+                const order = {
+                    id: Date.now() + i,
+                    poNo: row[0] || '',
+                    skuNo: row[1] || '',
+                    buyerCode: row[2] || '',
+                    mahimaCode: row[3] || '',
+                    color: row[4] || '',
+                    department: row[5] || '',
+                    exFactory: row[6] ? new Date(row[6]).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                    sizes: {
+                        size2: parseInt(row[7]) || 0,
+                        size4: parseInt(row[8]) || 0,
+                        size6: parseInt(row[9]) || 0,
+                        size8: parseInt(row[10]) || 0,
+                        size10: parseInt(row[11]) || 0,
+                        size12: parseInt(row[12]) || 0,
+                        size14: parseInt(row[13]) || 0,
+                        size16: parseInt(row[14]) || 0,
+                        size18: parseInt(row[15]) || 0,
+                        size20: parseInt(row[16]) || 0,
+                        size22: parseInt(row[17]) || 0,
+                        size24: parseInt(row[18]) || 0,
+                        size26: parseInt(row[19]) || 0,
+                        size28: parseInt(row[20]) || 0,
+                        size30: parseInt(row[21]) || 0
+                    },
+                    total: parseInt(row[22]) || 0,
+                    remark: row[23] || '',
+                    productImage: null // Images cannot be imported from Excel
+                };
+                
+                businessData.push(order);
+                importedCount++;
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('businessData', JSON.stringify(businessData));
+            
+            // Reload table
+            loadData();
+            updateStats();
+            
+            // Reset file input
+            event.target.value = '';
+            
+            showToast(`✅ Successfully imported ${importedCount} orders from Excel!`);
+            
+        } catch (error) {
+            console.error('Error importing Excel:', error);
+            alert('Error reading Excel file. Please make sure it\'s in the correct format.');
+            event.target.value = '';
+        }
+    };
+    
+    reader.onerror = function() {
+        alert('Error reading file!');
+        event.target.value = '';
+    };
+    
+    reader.readAsArrayBuffer(file);
+}
+
 // Show Toast Notification
 function showToast(message) {
     const toast = document.getElementById('toast');
