@@ -14,6 +14,7 @@
     --warning-color: #f59e0b;
     --info-color: #3b82f6;
     --bg-color: #f8fafc;
+    --preview-hrv-bg-color: #c8cbe9;
     --card-bg: #ffffff;
     --text-primary: #1e293b;
     --text-secondary: #64748b;
@@ -488,7 +489,7 @@ body {
 }
 
 .data-table tbody tr:hover {
-    background: var(--bg-color);
+    background: var(--preview-hrv-bg-color);
 }
 
 .total-column {
