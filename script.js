@@ -26,6 +26,10 @@ const cameraStreams = {
     add: null,
     edit: null
 };
+const imageCompressionSettings = {
+    maxSize: 800,
+    quality: 0.9
+};
 
 // Handle Custom Color Selection
 function handleColorChange() {
@@ -354,10 +358,10 @@ function capturePhoto(target) {
     }
 
     const { width, height } = getScaledDimensions(
-        video.videoWidth || 640,
-        video.videoHeight || 480,
-        300,
-        300
+        video.videoWidth || 1280,
+        video.videoHeight || 720,
+        imageCompressionSettings.maxSize,
+        imageCompressionSettings.maxSize
     );
 
     canvas.width = width;
@@ -365,7 +369,7 @@ function capturePhoto(target) {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, width, height);
 
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+    const dataUrl = canvas.toDataURL('image/jpeg', imageCompressionSettings.quality);
     setCapturedPreview(target, dataUrl);
 
     const fileInput = document.getElementById(config.fileInputId);
@@ -541,7 +545,7 @@ function formatMahimaField(e) {
 }
 
 // Image compression helper
-function compressImage(file, maxWidth, maxHeight, callback) {
+function compressImage(file, maxWidth, maxHeight, callback, quality = imageCompressionSettings.quality) {
     const reader = new FileReader();
     reader.onload = function (e) {
         const img = new Image();
@@ -569,7 +573,7 @@ function compressImage(file, maxWidth, maxHeight, callback) {
             ctx.drawImage(img, 0, 0, width, height);
 
             // Convert to base64 with reduced quality
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+            const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
             callback(compressedBase64);
         };
         img.src = e.target.result;
@@ -584,9 +588,15 @@ function previewImage(event) {
 
     if (file) {
         closeCamera('add');
-        compressImage(file, 300, 300, function (compressedImage) {
+        compressImage(
+            file,
+            imageCompressionSettings.maxSize,
+            imageCompressionSettings.maxSize,
+            function (compressedImage) {
             setImagePreview(preview, compressedImage, 'removeImage');
-        });
+            },
+            imageCompressionSettings.quality
+        );
     }
 }
 
@@ -604,9 +614,15 @@ function previewEditImage(event) {
 
     if (file) {
         closeCamera('edit');
-        compressImage(file, 300, 300, function (compressedImage) {
+        compressImage(
+            file,
+            imageCompressionSettings.maxSize,
+            imageCompressionSettings.maxSize,
+            function (compressedImage) {
             setImagePreview(preview, compressedImage, 'removeEditImage');
-        });
+            },
+            imageCompressionSettings.quality
+        );
     }
 }
 
