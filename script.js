@@ -2,12 +2,36 @@
 let businessData = JSON.parse(localStorage.getItem('businessData')) || [];
 let editMode = false;
 let editingId = null;
+const cameraConfig = {
+    add: {
+        videoId: 'cameraVideoAdd',
+        previewId: 'cameraPreviewAdd',
+        canvasId: 'cameraCanvasAdd',
+        triggerBtnId: 'cameraTriggerAdd',
+        captureBtnId: 'cameraCaptureAdd',
+        imagePreviewId: 'imagePreview',
+        fileInputId: 'productImage'
+    },
+    edit: {
+        videoId: 'cameraVideoEdit',
+        previewId: 'cameraPreviewEdit',
+        canvasId: 'cameraCanvasEdit',
+        triggerBtnId: 'cameraTriggerEdit',
+        captureBtnId: 'cameraCaptureEdit',
+        imagePreviewId: 'editImagePreview',
+        fileInputId: 'editProductImage'
+    }
+};
+const cameraStreams = {
+    add: null,
+    edit: null
+};
 
 // Handle Custom Color Selection
 function handleColorChange() {
     const colorSelect = document.getElementById('color');
     const customColorInput = document.getElementById('customColor');
-    
+
     if (colorSelect.value === 'CUSTOM') {
         customColorInput.style.display = 'block';
         customColorInput.required = true;
@@ -19,11 +43,27 @@ function handleColorChange() {
     }
 }
 
+// Handle Custom Department Selection
+function handleDepartmentChange() {
+    const departmentSelect = document.getElementById('department');
+    const customDepartmentInput = document.getElementById('customDepartment');
+
+    if (departmentSelect.value === 'CUSTOM') {
+        customDepartmentInput.style.display = 'block';
+        customDepartmentInput.required = true;
+        customDepartmentInput.focus();
+    } else {
+        customDepartmentInput.style.display = 'none';
+        customDepartmentInput.required = false;
+        customDepartmentInput.value = '';
+    }
+}
+
 // Handle Custom Color Selection in Edit Modal
 function handleEditColorChange() {
     const colorSelect = document.getElementById('editColor');
     const customColorInput = document.getElementById('editCustomColor');
-    
+
     if (colorSelect.value === 'CUSTOM') {
         customColorInput.style.display = 'block';
         customColorInput.required = true;
@@ -33,6 +73,307 @@ function handleEditColorChange() {
         customColorInput.required = false;
         customColorInput.value = '';
     }
+}
+
+// Handle Custom Department Selection in Edit Modal
+function handleEditDepartmentChange() {
+    const departmentSelect = document.getElementById('editDepartment');
+    const customDepartmentInput = document.getElementById('editCustomDepartment');
+
+    if (departmentSelect.value === 'CUSTOM') {
+        customDepartmentInput.style.display = 'block';
+        customDepartmentInput.required = true;
+        customDepartmentInput.focus();
+    } else {
+        customDepartmentInput.style.display = 'none';
+        customDepartmentInput.required = false;
+        customDepartmentInput.value = '';
+    }
+}
+
+function getCameraConfig(target) {
+    return cameraConfig[target] || null;
+}
+
+function setCameraTriggerState(target, isActive) {
+    const config = getCameraConfig(target);
+    if (!config) return;
+
+    const triggerBtn = document.getElementById(config.triggerBtnId);
+    if (!triggerBtn) return;
+
+    triggerBtn.innerHTML = isActive
+        ? '<i class="fas fa-times"></i> Close Camera'
+        : '<i class="fas fa-camera"></i> Open Camera';
+}
+
+function setCaptureButtonState(target, isActive) {
+    const config = getCameraConfig(target);
+    if (!config) return;
+
+    const captureBtn = document.getElementById(config.captureBtnId);
+
+    if (captureBtn) captureBtn.disabled = !isActive;
+}
+
+function getCameraErrorMessage(error) {
+    if (!error || !error.name) {
+        return 'Unable to access the camera. Please check permissions.';
+    }
+
+    switch (error.name) {
+        case 'NotAllowedError':
+            return 'Camera permission was denied. Please allow camera access for this site.';
+        case 'NotFoundError':
+            return 'No camera device was found. Please connect a camera and try again.';
+        case 'NotReadableError':
+            return 'Camera is already in use by another app. Close it and retry.';
+        case 'OverconstrainedError':
+            return 'Camera constraints are not supported on this device. Try again.';
+        case 'SecurityError':
+            return 'Camera access is blocked. Use HTTPS or localhost to open this page.';
+        default:
+            return 'Unable to access the camera. Please check permissions.';
+    }
+}
+
+async function requestCameraStream(constraintsList) {
+    let lastError;
+
+    for (const constraints of constraintsList) {
+        try {
+            return await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (err) {
+            lastError = err;
+        }
+    }
+
+    throw lastError;
+}
+
+function toggleCamera(target) {
+    if (cameraStreams[target]) {
+        closeCamera(target);
+        return;
+    }
+
+    openCamera(target);
+}
+
+function getScaledDimensions(width, height, maxWidth, maxHeight) {
+    let newWidth = width;
+    let newHeight = height;
+
+    if (width > height) {
+        if (width > maxWidth) {
+            newHeight = Math.round((height * maxWidth) / width);
+            newWidth = maxWidth;
+        }
+    } else {
+        if (height > maxHeight) {
+            newWidth = Math.round((width * maxHeight) / height);
+            newHeight = maxHeight;
+        }
+    }
+
+    return { width: newWidth, height: newHeight };
+}
+
+function setImagePreview(preview, dataUrl, removeFnName) {
+    if (!preview) return;
+
+    preview.innerHTML = `
+        <img src="${dataUrl}" alt="Product Preview">
+        <button type="button" class="remove-image-btn" onclick="${removeFnName}()">
+            <i class="fas fa-times"></i> Remove Image
+        </button>
+    `;
+    preview.style.display = 'block';
+    preview.dataset.compressedImage = dataUrl;
+}
+
+function setCapturedPreview(target, dataUrl) {
+    const config = getCameraConfig(target);
+    if (!config) return;
+
+    const preview = document.getElementById(config.imagePreviewId);
+    if (!preview) return;
+
+    preview.innerHTML = `
+        <img src="${dataUrl}" alt="Product Preview">
+        <div class="camera-action-buttons">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="retryCapture('${target}')">
+                <i class="fas fa-rotate-right"></i> Retry
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="confirmCapture('${target}')">
+                <i class="fas fa-check"></i> Done
+            </button>
+        </div>
+    `;
+    preview.style.display = 'block';
+    preview.dataset.compressedImage = dataUrl;
+}
+
+function retryCapture(target) {
+    const config = getCameraConfig(target);
+    if (!config) return;
+
+    const preview = document.getElementById(config.imagePreviewId);
+    if (preview) {
+        preview.innerHTML = '';
+        preview.style.display = 'none';
+        delete preview.dataset.compressedImage;
+    }
+
+    const fileInput = document.getElementById(config.fileInputId);
+    if (fileInput) {
+        fileInput.value = '';
+    }
+
+    openCamera(target);
+}
+
+function confirmCapture(target) {
+    const config = getCameraConfig(target);
+    if (!config) return;
+
+    const preview = document.getElementById(config.imagePreviewId);
+    if (!preview || !preview.dataset.compressedImage) return;
+
+    const removeFn = target === 'add' ? 'removeImage' : 'removeEditImage';
+    setImagePreview(preview, preview.dataset.compressedImage, removeFn);
+}
+
+async function openCamera(target) {
+    const config = getCameraConfig(target);
+    if (!config) return;
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Camera access is not supported in this browser.');
+        return;
+    }
+
+    if (cameraStreams[target]) {
+        const video = document.getElementById(config.videoId);
+        const preview = document.getElementById(config.previewId);
+
+        if (preview) {
+            preview.style.display = 'block';
+        }
+
+        if (video) {
+            const playPromise = video.play();
+            if (playPromise && typeof playPromise.catch === 'function') {
+                playPromise.catch(() => { });
+            }
+        }
+
+        setCameraTriggerState(target, true);
+        setCaptureButtonState(target, true);
+        return;
+    }
+
+    const otherTarget = target === 'add' ? 'edit' : 'add';
+    closeCamera(otherTarget);
+
+    try {
+        const stream = await requestCameraStream([
+            { video: { facingMode: { ideal: 'environment' } }, audio: false },
+            { video: true, audio: false }
+        ]);
+
+        cameraStreams[target] = stream;
+        const video = document.getElementById(config.videoId);
+        const preview = document.getElementById(config.previewId);
+
+        if (video) {
+            video.srcObject = stream;
+            const playPromise = video.play();
+            if (playPromise && typeof playPromise.catch === 'function') {
+                playPromise.catch(() => { });
+            }
+        }
+
+        if (preview) {
+            preview.style.display = 'block';
+        }
+
+        setCameraTriggerState(target, true);
+        setCaptureButtonState(target, true);
+    } catch (err) {
+        closeCamera(target);
+        console.warn('Camera access failed:', err);
+        alert(getCameraErrorMessage(err));
+    }
+}
+
+function closeCamera(target, options = {}) {
+    const config = getCameraConfig(target);
+    if (!config) return;
+
+    const keepStream = options.keepStream === true;
+
+    const video = document.getElementById(config.videoId);
+    const preview = document.getElementById(config.previewId);
+
+    if (preview) {
+        preview.style.display = 'none';
+    }
+
+    setCaptureButtonState(target, false);
+
+    if (keepStream) {
+        setCameraTriggerState(target, true);
+        return;
+    }
+
+    const stream = cameraStreams[target];
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        cameraStreams[target] = null;
+    }
+
+    if (video) {
+        video.pause();
+        video.srcObject = null;
+    }
+
+    setCameraTriggerState(target, false);
+}
+
+function capturePhoto(target) {
+    const config = getCameraConfig(target);
+    if (!config) return;
+
+    const video = document.getElementById(config.videoId);
+    const canvas = document.getElementById(config.canvasId);
+    const preview = document.getElementById(config.imagePreviewId);
+
+    if (!video || !canvas || !preview || !cameraStreams[target]) {
+        return;
+    }
+
+    const { width, height } = getScaledDimensions(
+        video.videoWidth || 640,
+        video.videoHeight || 480,
+        300,
+        300
+    );
+
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, width, height);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+    setCapturedPreview(target, dataUrl);
+
+    const fileInput = document.getElementById(config.fileInputId);
+    if (fileInput) {
+        fileInput.value = '';
+    }
+
+    closeCamera(target);
 }
 
 // Initialize
@@ -67,6 +408,11 @@ document.addEventListener('DOMContentLoaded', function () {
     setupLastOrderHistory();
 });
 
+window.addEventListener('beforeunload', function () {
+    closeCamera('add');
+    closeCamera('edit');
+});
+
 // Handle Form Submission
 function handleFormSubmit(e) {
     e.preventDefault();
@@ -94,7 +440,10 @@ function saveFormData(productImage) {
     const colorSelect = document.getElementById('color');
     const customColorInput = document.getElementById('customColor');
     const colorValue = colorSelect.value === 'CUSTOM' ? customColorInput.value : colorSelect.value;
-    
+    const departmentSelect = document.getElementById('department');
+    const customDepartmentInput = document.getElementById('customDepartment');
+    const departmentValue = departmentSelect.value === 'CUSTOM' ? customDepartmentInput.value : departmentSelect.value;
+
     const formData = {
         id: editMode ? editingId : Date.now(),
         poNo: document.getElementById('poNo').value.toUpperCase(),
@@ -102,7 +451,7 @@ function saveFormData(productImage) {
         buyerCode: document.getElementById('buyerCode').value.toUpperCase(),
         mahimaCode: document.getElementById('mahimaCode').value.toUpperCase(),
         color: colorValue.toUpperCase(),
-        department: document.getElementById('department').value,
+        department: departmentValue,
         exFactory: document.getElementById('exFactory').value,
         remark: document.getElementById('remark').value.toUpperCase(),
         productImage: productImage,
@@ -194,9 +543,9 @@ function formatMahimaField(e) {
 // Image compression helper
 function compressImage(file, maxWidth, maxHeight, callback) {
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         const img = new Image();
-        img.onload = function() {
+        img.onload = function () {
             const canvas = document.createElement('canvas');
             let width = img.width;
             let height = img.height;
@@ -234,15 +583,9 @@ function previewImage(event) {
     const preview = document.getElementById('imagePreview');
 
     if (file) {
-        compressImage(file, 300, 300, function(compressedImage) {
-            preview.innerHTML = `
-                <img src="${compressedImage}" alt="Product Preview" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
-                <button type="button" class="remove-image-btn" onclick="removeImage()">
-                    <i class="fas fa-times"></i> Remove Image
-                </button>
-            `;
-            preview.style.display = 'block';
-            preview.dataset.compressedImage = compressedImage;
+        closeCamera('add');
+        compressImage(file, 300, 300, function (compressedImage) {
+            setImagePreview(preview, compressedImage, 'removeImage');
         });
     }
 }
@@ -260,15 +603,9 @@ function previewEditImage(event) {
     const preview = document.getElementById('editImagePreview');
 
     if (file) {
-        compressImage(file, 300, 300, function(compressedImage) {
-            preview.innerHTML = `
-                <img src="${compressedImage}" alt="Product Preview" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
-                <button type="button" class="remove-image-btn" onclick="removeEditImage()">
-                    <i class="fas fa-times"></i> Remove Image
-                </button>
-            `;
-            preview.style.display = 'block';
-            preview.dataset.compressedImage = compressedImage;
+        closeCamera('edit');
+        compressImage(file, 300, 300, function (compressedImage) {
+            setImagePreview(preview, compressedImage, 'removeEditImage');
         });
     }
 }
@@ -322,7 +659,7 @@ function showImageModal(imageSrc) {
     document.body.appendChild(overlay);
 
     // Close on click
-    overlay.addEventListener('click', function() {
+    overlay.addEventListener('click', function () {
         document.body.removeChild(overlay);
     });
 }
@@ -416,17 +753,27 @@ function openEditModal(id) {
     const item = businessData.find(data => data.id === id);
     if (!item) return;
 
+    closeCamera('edit');
+    const editImagePreview = document.getElementById('editImagePreview');
+    const editProductImage = document.getElementById('editProductImage');
+    if (editProductImage) {
+        editProductImage.value = '';
+    }
+    if (editImagePreview) {
+        delete editImagePreview.dataset.compressedImage;
+    }
+
     // Populate modal with current data
     document.getElementById('editPoNo').value = item.poNo;
     document.getElementById('editSkuNo').value = item.skuNo;
     document.getElementById('editBuyerCode').value = item.buyerCode;
     document.getElementById('editMahimaCode').value = item.mahimaCode;
-    
+
     // Handle color - check if it's a predefined color or custom
     const colorSelect = document.getElementById('editColor');
     const customColorInput = document.getElementById('editCustomColor');
     const predefinedColors = ['WHITE', 'BLACK', 'CREAM', 'BLUE FLORAL', 'MARIGOLD', 'ZEBRA PRINT', 'FLORAL SPOT PRINT', 'PLACEMENT PRINT', 'TBC'];
-    
+
     if (predefinedColors.includes(item.color)) {
         colorSelect.value = item.color;
         customColorInput.style.display = 'none';
@@ -439,13 +786,35 @@ function openEditModal(id) {
         customColorInput.required = true;
         customColorInput.value = item.color;
     }
-    
-    document.getElementById('editDepartment').value = item.department;
+
+    const editDepartmentSelect = document.getElementById('editDepartment');
+    const editCustomDepartmentInput = document.getElementById('editCustomDepartment');
+    const departmentMap = {
+        'ARRANGE': 'ARRANGE',
+        'EVENING DRESSES': 'Evening Dresses',
+        'DAY DRESSES': 'Day Dresses',
+        'SEPARATES WO': 'Separates Wo',
+        'RECLAIMED VINTAGE': 'Reclaimed Vintage'
+    };
+    const predefinedDepartments = Object.keys(departmentMap);
+
+    const normalizedDepartment = item.department ? item.department.toUpperCase() : '';
+
+    if (predefinedDepartments.includes(normalizedDepartment)) {
+        editDepartmentSelect.value = departmentMap[normalizedDepartment];
+        editCustomDepartmentInput.style.display = 'none';
+        editCustomDepartmentInput.required = false;
+        editCustomDepartmentInput.value = '';
+    } else {
+        editDepartmentSelect.value = 'CUSTOM';
+        editCustomDepartmentInput.style.display = 'block';
+        editCustomDepartmentInput.required = true;
+        editCustomDepartmentInput.value = item.department;
+    }
     document.getElementById('editExFactory').value = item.exFactory;
     document.getElementById('editRemark').value = item.remark || '';
 
     // Show existing product image if available
-    const editImagePreview = document.getElementById('editImagePreview');
     if (item.productImage) {
         editImagePreview.innerHTML = `
             <img src="${item.productImage}" alt="Product Preview" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
@@ -489,6 +858,7 @@ function openEditModal(id) {
 // Close Edit Modal
 function closeEditModal() {
     document.getElementById('editModal').style.display = 'none';
+    closeCamera('edit');
 }
 
 // Calculate Edit Form Total
@@ -534,7 +904,10 @@ function saveEditedDataWithImage(id, index, productImage) {
     const colorSelect = document.getElementById('editColor');
     const customColorInput = document.getElementById('editCustomColor');
     const colorValue = colorSelect.value === 'CUSTOM' ? customColorInput.value : colorSelect.value;
-    
+    const departmentSelect = document.getElementById('editDepartment');
+    const customDepartmentInput = document.getElementById('editCustomDepartment');
+    const departmentValue = departmentSelect.value === 'CUSTOM' ? customDepartmentInput.value : departmentSelect.value;
+
     const updatedData = {
         id: id,
         poNo: document.getElementById('editPoNo').value.toUpperCase(),
@@ -542,7 +915,7 @@ function saveEditedDataWithImage(id, index, productImage) {
         buyerCode: document.getElementById('editBuyerCode').value.toUpperCase(),
         mahimaCode: document.getElementById('editMahimaCode').value.toUpperCase(),
         color: colorValue.toUpperCase(),
-        department: document.getElementById('editDepartment').value,
+        department: departmentValue,
         exFactory: document.getElementById('editExFactory').value,
         remark: document.getElementById('editRemark').value.toUpperCase(),
         productImage: productImage,
@@ -629,10 +1002,10 @@ function showLastOrderHistory() {
     `;
 
     recentOrders.forEach((order, index) => {
-        const imageHtml = order.productImage 
-            ? `<img src="${order.productImage}" alt="Product" class="order-history-img">` 
+        const imageHtml = order.productImage
+            ? `<img src="${order.productImage}" alt="Product" class="order-history-img">`
             : `<div class="order-history-no-img">No<br>Image</div>`;
-        
+
         contentHtml += `
             <div class="order-history-card">
                 <!-- Row 1: Date at top right -->
@@ -694,20 +1067,37 @@ function fillFormWithHistory(orderId) {
     document.getElementById('buyerCode').value = order.buyerCode;
     document.getElementById('mahimaCode').value = order.mahimaCode;
     document.getElementById('color').value = order.color;
-    document.getElementById('department').value = order.department;
+    const departmentSelect = document.getElementById('department');
+    const customDepartmentInput = document.getElementById('customDepartment');
+    const departmentMap = {
+        'ARRANGE': 'ARRANGE',
+        'EVENING DRESSES': 'Evening Dresses',
+        'DAY DRESSES': 'Day Dresses',
+        'SEPARATES WO': 'Separates Wo',
+        'RECLAIMED VINTAGE': 'Reclaimed Vintage'
+    };
+    const predefinedDepartments = Object.keys(departmentMap);
+
+    const normalizedDepartment = order.department ? order.department.toUpperCase() : '';
+
+    if (predefinedDepartments.includes(normalizedDepartment)) {
+        departmentSelect.value = departmentMap[normalizedDepartment];
+        customDepartmentInput.style.display = 'none';
+        customDepartmentInput.required = false;
+        customDepartmentInput.value = '';
+    } else {
+        departmentSelect.value = 'CUSTOM';
+        customDepartmentInput.style.display = 'block';
+        customDepartmentInput.required = true;
+        customDepartmentInput.value = order.department;
+    }
     document.getElementById('remark').value = order.remark || '';
 
     // Fill product image if available
+    closeCamera('add');
     const imagePreview = document.getElementById('imagePreview');
     if (order.productImage) {
-        imagePreview.innerHTML = `
-            <img src="${order.productImage}" alt="Product Preview" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
-            <button type="button" class="remove-image-btn" onclick="removeImage()">
-                <i class="fas fa-times"></i> Remove Image
-            </button>
-        `;
-        imagePreview.style.display = 'block';
-        imagePreview.dataset.compressedImage = order.productImage;
+        setImagePreview(imagePreview, order.productImage, 'removeImage');
     } else {
         removeImage();
     }
@@ -756,6 +1146,8 @@ function resetForm() {
     editMode = false;
     editingId = null;
 
+    closeCamera('add');
+
     // Reset PO number to default
     document.getElementById('poNo').value = '5000';
 
@@ -768,6 +1160,14 @@ function resetForm() {
         customColorInput.style.display = 'none';
         customColorInput.required = false;
         customColorInput.value = '';
+    }
+
+    // Hide custom department input
+    const customDepartmentInput = document.getElementById('customDepartment');
+    if (customDepartmentInput) {
+        customDepartmentInput.style.display = 'none';
+        customDepartmentInput.required = false;
+        customDepartmentInput.value = '';
     }
 
     // Update button text
@@ -797,7 +1197,7 @@ function exportToPDF() {
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('landscape', 'mm', 'a4');
-    
+
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     const margin = 10; // Professional margin
@@ -908,9 +1308,9 @@ function exportToPDF() {
             20: { cellWidth: 7 }, // 26
             21: { cellWidth: 7 }, // 28
             22: { cellWidth: 7 }, // 30
-            23: { 
-                cellWidth: 10, 
-                fillColor: [220, 220, 255], 
+            23: {
+                cellWidth: 10,
+                fillColor: [220, 220, 255],
                 fontStyle: 'bold',
                 textColor: [99, 102, 241]
             }, // TOTAL
@@ -924,7 +1324,7 @@ function exportToPDF() {
         },
         margin: { top: 37, left: margin, right: margin, bottom: margin },
         tableWidth: 'auto',
-        didDrawPage: function(data) {
+        didDrawPage: function (data) {
             // Add page number at bottom
             doc.setFontSize(8);
             doc.setTextColor(150, 150, 150);
@@ -1003,7 +1403,7 @@ function exportToPDF() {
                 const imgX = xPosition + (imageWidth - imageSize) / 2;
                 const imgY = yPosition + labelHeight + 2;
                 doc.rect(imgX, imgY, imageSize, imageSize, 'F');
-                
+
                 doc.setFontSize(7);
                 doc.setTextColor(150, 150, 150);
                 doc.text('No Image', xPosition + imageWidth / 2, yPosition + labelHeight + imageSize / 2 + 2, { align: 'center' });
@@ -1131,7 +1531,8 @@ function exportToExcel() {
         '28',
         '30',
         'TOTAL',
-        'REMARK'
+        'REMARK',
+        'IMAGE_DATA'
     ];
 
     // Prepare data rows
@@ -1159,7 +1560,8 @@ function exportToExcel() {
         item.sizes.size28 || 0,
         item.sizes.size30 || 0,
         item.total,
-        item.remark || ''
+        item.remark || '',
+        item.productImage || ''
     ]);
 
     // Combine headers and data
@@ -1167,9 +1569,19 @@ function exportToExcel() {
 
     // Add summary rows
     wsData.push([]);
-    wsData.push(['SUMMARY', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
-    wsData.push(['Total Orders:', businessData.length, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
-    wsData.push(['Total Units:', businessData.reduce((sum, item) => sum + item.total, 0), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+    const summaryRow = new Array(headers.length).fill('');
+    summaryRow[0] = 'SUMMARY';
+    wsData.push(summaryRow);
+
+    const totalOrdersRow = new Array(headers.length).fill('');
+    totalOrdersRow[0] = 'Total Orders:';
+    totalOrdersRow[1] = businessData.length;
+    wsData.push(totalOrdersRow);
+
+    const totalUnitsRow = new Array(headers.length).fill('');
+    totalUnitsRow[0] = 'Total Units:';
+    totalUnitsRow[1] = businessData.reduce((sum, item) => sum + item.total, 0);
+    wsData.push(totalUnitsRow);
 
     // Create worksheet
     const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -1187,7 +1599,8 @@ function exportToExcel() {
         { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
         { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
         { wch: 15 }, // TOTAL
-        { wch: 20 }  // REMARK
+        { wch: 20 }, // REMARK
+        { wch: 30 }  // IMAGE_DATA
     ];
     ws['!cols'] = colWidths;
 
@@ -1217,102 +1630,142 @@ function exportToExcel() {
 // Import from Excel
 function importFromExcel(event) {
     const file = event.target.files[0];
-    
+
     if (!file) {
         return;
     }
 
     const reader = new FileReader();
-    
-    reader.onload = function(e) {
+
+    reader.onload = function (e) {
         try {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
-            
+
             // Get first sheet
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            
+
             // Convert to JSON
             const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-            
+
             if (jsonData.length < 2) {
                 alert('Excel file is empty or invalid!');
                 return;
             }
-            
-            // Clear existing data
-            businessData = [];
-            
+
+            const normalizeHeader = (value) => String(value || '').trim().toUpperCase();
+            const headerRow = (jsonData[0] || []).map(normalizeHeader);
+            const findHeaderIndex = (names, fallback) => {
+                for (const name of names) {
+                    const index = headerRow.indexOf(name);
+                    if (index !== -1) return index;
+                }
+                return fallback;
+            };
+
+            const idxPoNo = findHeaderIndex(['PO NO'], 0);
+            const idxSkuNo = findHeaderIndex(['SKU NO'], 1);
+            const idxBuyerCode = findHeaderIndex(['BUYER CODE'], 2);
+            const idxMahimaCode = findHeaderIndex(['MAHIMA CODE'], 3);
+            const idxColor = findHeaderIndex(['COLOR'], 4);
+            const idxDepartment = findHeaderIndex(['DEPARTMENT'], 5);
+            const idxExFactory = findHeaderIndex(['EX-FACTORY', 'EX FACTORY'], 6);
+            const idxSize2 = findHeaderIndex(['2'], 7);
+            const idxSize4 = findHeaderIndex(['4/UK4'], 8);
+            const idxSize6 = findHeaderIndex(['6/UK5'], 9);
+            const idxSize8 = findHeaderIndex(['8/UK6'], 10);
+            const idxSize10 = findHeaderIndex(['10/UK10'], 11);
+            const idxSize12 = findHeaderIndex(['12/UK12'], 12);
+            const idxSize14 = findHeaderIndex(['14/UK14'], 13);
+            const idxSize16 = findHeaderIndex(['16/UK16'], 14);
+            const idxSize18 = findHeaderIndex(['18/UK18'], 15);
+            const idxSize20 = findHeaderIndex(['20'], 16);
+            const idxSize22 = findHeaderIndex(['22'], 17);
+            const idxSize24 = findHeaderIndex(['24'], 18);
+            const idxSize26 = findHeaderIndex(['26'], 19);
+            const idxSize28 = findHeaderIndex(['28'], 20);
+            const idxSize30 = findHeaderIndex(['30'], 21);
+            const idxTotal = findHeaderIndex(['TOTAL'], 22);
+            const idxRemark = findHeaderIndex(['REMARK'], 23);
+            const idxImage = findHeaderIndex(['IMAGE_DATA', 'IMAGE DATA', 'IMAGE'], 24);
+
+            const shouldReplace = false;
+
             // Skip header row (index 0) and process data rows
             let importedCount = 0;
             for (let i = 1; i < jsonData.length; i++) {
                 const row = jsonData[i];
-                
+
                 // Skip empty rows or summary rows
-                if (!row || !row[0] || row[0] === 'SUMMARY' || row[0] === 'Total Orders:' || row[0] === 'Total Units:') {
+                if (!row || !row[idxPoNo] || row[0] === 'SUMMARY' || row[0] === 'Total Orders:' || row[0] === 'Total Units:') {
                     continue;
                 }
-                
+
+                const rawImage = typeof row[idxImage] === 'string' ? row[idxImage].trim() : '';
+                const productImage = rawImage && (rawImage.startsWith('data:image/') || rawImage.startsWith('http'))
+                    ? rawImage
+                    : null;
+
                 // Create order object
                 const order = {
                     id: Date.now() + i,
-                    poNo: row[0] || '',
-                    skuNo: row[1] || '',
-                    buyerCode: row[2] || '',
-                    mahimaCode: row[3] || '',
-                    color: row[4] || '',
-                    department: row[5] || '',
-                    exFactory: row[6] ? new Date(row[6]).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                    poNo: row[idxPoNo] || '',
+                    skuNo: row[idxSkuNo] || '',
+                    buyerCode: row[idxBuyerCode] || '',
+                    mahimaCode: row[idxMahimaCode] || '',
+                    color: row[idxColor] || '',
+                    department: row[idxDepartment] || '',
+                    exFactory: row[idxExFactory] ? new Date(row[idxExFactory]).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
                     sizes: {
-                        size2: parseInt(row[7]) || 0,
-                        size4: parseInt(row[8]) || 0,
-                        size6: parseInt(row[9]) || 0,
-                        size8: parseInt(row[10]) || 0,
-                        size10: parseInt(row[11]) || 0,
-                        size12: parseInt(row[12]) || 0,
-                        size14: parseInt(row[13]) || 0,
-                        size16: parseInt(row[14]) || 0,
-                        size18: parseInt(row[15]) || 0,
-                        size20: parseInt(row[16]) || 0,
-                        size22: parseInt(row[17]) || 0,
-                        size24: parseInt(row[18]) || 0,
-                        size26: parseInt(row[19]) || 0,
-                        size28: parseInt(row[20]) || 0,
-                        size30: parseInt(row[21]) || 0
+                        size2: parseInt(row[idxSize2]) || 0,
+                        size4: parseInt(row[idxSize4]) || 0,
+                        size6: parseInt(row[idxSize6]) || 0,
+                        size8: parseInt(row[idxSize8]) || 0,
+                        size10: parseInt(row[idxSize10]) || 0,
+                        size12: parseInt(row[idxSize12]) || 0,
+                        size14: parseInt(row[idxSize14]) || 0,
+                        size16: parseInt(row[idxSize16]) || 0,
+                        size18: parseInt(row[idxSize18]) || 0,
+                        size20: parseInt(row[idxSize20]) || 0,
+                        size22: parseInt(row[idxSize22]) || 0,
+                        size24: parseInt(row[idxSize24]) || 0,
+                        size26: parseInt(row[idxSize26]) || 0,
+                        size28: parseInt(row[idxSize28]) || 0,
+                        size30: parseInt(row[idxSize30]) || 0
                     },
-                    total: parseInt(row[22]) || 0,
-                    remark: row[23] || '',
-                    productImage: null // Images cannot be imported from Excel
+                    total: parseInt(row[idxTotal]) || 0,
+                    remark: row[idxRemark] || '',
+                    productImage: productImage
                 };
-                
+
                 businessData.push(order);
                 importedCount++;
             }
-            
+
             // Save to localStorage
             localStorage.setItem('businessData', JSON.stringify(businessData));
-            
+
             // Reload table
             loadData();
             updateStats();
-            
+
             // Reset file input
             event.target.value = '';
-            
-            showToast(`✅ Successfully imported ${importedCount} orders from Excel!`);
-            
+
+            showToast(`✅ Added ${importedCount} orders from Excel!`);
+
         } catch (error) {
             console.error('Error importing Excel:', error);
             alert('Error reading Excel file. Please make sure it\'s in the correct format.');
             event.target.value = '';
         }
     };
-    
-    reader.onerror = function() {
+
+    reader.onerror = function () {
         alert('Error reading file!');
         event.target.value = '';
     };
-    
+
     reader.readAsArrayBuffer(file);
 }
 

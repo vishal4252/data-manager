@@ -158,14 +158,22 @@
                 </div>
                 <div class="form-group">
                   <label for="department">Department *</label>
-                  <select id="department" required>
+                  <select id="department" required onchange="handleDepartmentChange()">
                     <option value="">Select Department</option>
                     <option value="ARRANGE">ARRANGE</option>
                     <option value="Evening Dresses">Evening Dresses</option>
                     <option value="Day Dresses">Day Dresses</option>
                     <option value="Separates Wo">Separates Wo</option>
                     <option value="Reclaimed Vintage">Reclaimed Vintage</option>
+                    <option value="CUSTOM">➕ Add Custom Department</option>
                   </select>
+                  <input
+                    type="text"
+                    id="customDepartment"
+                    placeholder="Enter custom department"
+                    style="display: none; margin-top: 8px;"
+                    oninput="this.value = this.value.toUpperCase()"
+                  />
                 </div>
               </div>
               <div class="form-row">
@@ -192,6 +200,40 @@
                     accept="image/*"
                     onchange="previewImage(event)"
                   />
+                  <div class="image-actions">
+                    <button
+                      type="button"
+                      class="btn btn-secondary btn-sm"
+                      id="cameraTriggerAdd"
+                      onclick="toggleCamera('add')"
+                    >
+                      <i class="fas fa-camera"></i> Open Camera
+                    </button>
+                  </div>
+                  <div
+                    id="cameraPreviewAdd"
+                    class="camera-preview"
+                    style="display: none"
+                  >
+                    <video
+                      id="cameraVideoAdd"
+                      class="camera-video"
+                      autoplay
+                      playsinline
+                    ></video>
+                    <div class="camera-controls">
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-sm"
+                        id="cameraCaptureAdd"
+                        onclick="capturePhoto('add')"
+                        disabled
+                      >
+                        <i class="fas fa-circle"></i> Capture
+                      </button>
+                    </div>
+                  </div>
+                  <canvas id="cameraCanvasAdd" class="camera-canvas"></canvas>
                   <div
                     id="imagePreview"
                     style="margin-top: 10px; display: none"
@@ -505,14 +547,22 @@
               </div>
               <div class="form-group">
                 <label for="editDepartment">Department *</label>
-                <select id="editDepartment" required>
+                <select id="editDepartment" required onchange="handleEditDepartmentChange()">
                   <option value="">Select Department</option>
                   <option value="ARRANGE">ARRANGE</option>
                   <option value="Evening Dresses">Evening Dresses</option>
                   <option value="Day Dresses">Day Dresses</option>
                   <option value="Separates Wo">Separates Wo</option>
                   <option value="Reclaimed Vintage">Reclaimed Vintage</option>
+                  <option value="CUSTOM">➕ Add Custom Department</option>
                 </select>
+                <input
+                  type="text"
+                  id="editCustomDepartment"
+                  placeholder="Enter custom department"
+                  style="display: none; margin-top: 8px;"
+                  oninput="this.value = this.value.toUpperCase()"
+                />
               </div>
             </div>
             <div class="form-row">
@@ -539,6 +589,40 @@
                   accept="image/*"
                   onchange="previewEditImage(event)"
                 />
+                <div class="image-actions">
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    id="cameraTriggerEdit"
+                    onclick="toggleCamera('edit')"
+                  >
+                    <i class="fas fa-camera"></i> Open Camera
+                  </button>
+                </div>
+                <div
+                  id="cameraPreviewEdit"
+                  class="camera-preview"
+                  style="display: none"
+                >
+                  <video
+                    id="cameraVideoEdit"
+                    class="camera-video"
+                    autoplay
+                    playsinline
+                  ></video>
+                  <div class="camera-controls">
+                    <button
+                      type="button"
+                      class="btn btn-primary btn-sm"
+                      id="cameraCaptureEdit"
+                      onclick="capturePhoto('edit')"
+                      disabled
+                    >
+                      <i class="fas fa-circle"></i> Capture
+                    </button>
+                  </div>
+                </div>
+                <canvas id="cameraCanvasEdit" class="camera-canvas"></canvas>
                 <div
                   id="editImagePreview"
                   style="margin-top: 10px; display: none"
