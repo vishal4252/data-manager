@@ -755,8 +755,9 @@ function updateStats() {
 
 // Delete Row
 function deleteRow(id) {
+    const targetId = String(id);
     if (confirm('Are you sure you want to delete this order?')) {
-        businessData = businessData.filter(item => item.id !== id);
+        businessData = businessData.filter(item => String(item.id) !== targetId);
         localStorage.setItem('businessData', JSON.stringify(businessData));
         loadData();
         updateStats();
@@ -1643,6 +1644,103 @@ function exportToExcel() {
     showToast('Excel file exported successfully! 📗');
 }
 
+function parseExcelDate(value) {
+    if (!value) return '';
+
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return value.toISOString().split('T')[0];
+    }
+
+    if (typeof value === 'number') {
+        const parsed = XLSX && XLSX.SSF ? XLSX.SSF.parse_date_code(value) : null;
+        if (parsed && parsed.y && parsed.m && parsed.d) {
+            const date = new Date(Date.UTC(parsed.y, parsed.m - 1, parsed.d));
+            return date.toISOString().split('T')[0];
+        }
+    }
+
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) return '';
+
+        const isoDate = new Date(trimmed);
+        if (!Number.isNaN(isoDate.getTime())) {
+            return isoDate.toISOString().split('T')[0];
+        }
+
+        const match = trimmed.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/);
+        if (match) {
+            const day = Number.parseInt(match[1], 10);
+            const month = Number.parseInt(match[2], 10) - 1;
+            let year = Number.parseInt(match[3], 10);
+            if (year < 100) year += 2000;
+
+            const parsedDate = new Date(Date.UTC(year, month, day));
+            if (!Number.isNaN(parsedDate.getTime())) {
+                return parsedDate.toISOString().split('T')[0];
+            }
+        }
+    }
+
+    return '';
+}
+
+function isQuotaExceededError(error) {
+    if (!error) return false;
+
+    return error.name === 'QuotaExceededError'
+        || error.code === 22
+        || error.code === 1014
+        || String(error.message || '').toLowerCase().includes('quota');
+}
+
+function persistBusinessData(startIndex) {
+    let removedNewImages = false;
+    let removedAllImages = false;
+
+    try {
+        localStorage.setItem('businessData', JSON.stringify(businessData));
+        return { saved: true, removedNewImages, removedAllImages };
+    } catch (error) {
+        if (!isQuotaExceededError(error)) {
+            throw error;
+        }
+    }
+
+    // Retry without images for newly imported rows
+    for (let i = startIndex; i < businessData.length; i++) {
+        businessData[i].productImage = null;
+    }
+    removedNewImages = true;
+
+    try {
+        localStorage.setItem('businessData', JSON.stringify(businessData));
+        return { saved: true, removedNewImages, removedAllImages };
+    } catch (error) {
+        if (!isQuotaExceededError(error)) {
+            throw error;
+        }
+    }
+
+    // Retry without images for all rows
+    businessData = businessData.map(item => ({
+        ...item,
+        productImage: null
+    }));
+    removedAllImages = true;
+
+    try {
+        localStorage.setItem('businessData', JSON.stringify(businessData));
+        return { saved: true, removedNewImages, removedAllImages };
+    } catch (error) {
+        if (!isQuotaExceededError(error)) {
+            throw error;
+        }
+    }
+
+    return { saved: false, removedNewImages, removedAllImages };
+}
+
 // Import from Excel
 function importFromExcel(event) {
     const file = event.target.files[0];
@@ -1651,12 +1749,18 @@ function importFromExcel(event) {
         return;
     }
 
+    if (typeof XLSX === 'undefined') {
+        alert('Excel import library failed to load. Please disable blockers and reload the page.');
+        event.target.value = '';
+        return;
+    }
+
     const reader = new FileReader();
 
     reader.onload = function (e) {
         try {
             const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
+            const workbook = XLSX.read(data, { type: 'array', cellDates: true });
 
             // Get first sheet
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -1709,6 +1813,7 @@ function importFromExcel(event) {
 
             // Skip header row (index 0) and process data rows
             let importedCount = 0;
+            const startIndex = businessData.length;
             for (let i = 1; i < jsonData.length; i++) {
                 const row = jsonData[i];
 
@@ -1731,7 +1836,7 @@ function importFromExcel(event) {
                     mahimaCode: row[idxMahimaCode] || '',
                     color: row[idxColor] || '',
                     department: row[idxDepartment] || '',
-                    exFactory: row[idxExFactory] ? new Date(row[idxExFactory]).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                    exFactory: parseExcelDate(row[idxExFactory]) || new Date().toISOString().split('T')[0],
                     sizes: {
                         size2: parseInt(row[idxSize2]) || 0,
                         size4: parseInt(row[idxSize4]) || 0,
@@ -1758,8 +1863,7 @@ function importFromExcel(event) {
                 importedCount++;
             }
 
-            // Save to localStorage
-            localStorage.setItem('businessData', JSON.stringify(businessData));
+            const persistResult = persistBusinessData(startIndex);
 
             // Reload table
             loadData();
@@ -1768,7 +1872,16 @@ function importFromExcel(event) {
             // Reset file input
             event.target.value = '';
 
-            showToast(`✅ Added ${importedCount} orders from Excel!`);
+            if (!persistResult.saved) {
+                showToast(`Added ${importedCount} orders, but storage is full. Export or clear data.`);
+                alert('Storage is full. Data is shown now, but it will be lost after refresh. Export CSV or clear data to save.');
+            } else if (persistResult.removedAllImages) {
+                showToast(`Added ${importedCount} orders (images removed to fit storage).`);
+            } else if (persistResult.removedNewImages) {
+                showToast(`Added ${importedCount} orders (new images removed to fit storage).`);
+            } else {
+                showToast(`✅ Added ${importedCount} orders from Excel!`);
+            }
 
         } catch (error) {
             console.error('Error importing Excel:', error);
